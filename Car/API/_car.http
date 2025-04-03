@@ -9,7 +9,10 @@ POST http://localhost:5106/api/carros/cadastrar
 Content-Type: application/json
 
 {
-    "name": "BMW M4"
+    "name": "BMW X2",
+    "modelo": {
+        "Id": 3
+    }
 }
 
 ### Alterar o carro pelo ID
@@ -22,3 +25,4 @@ Content-Type: application/json
 
 ### Remove o carro pelo ID
 DELETE http://localhost:5106/api/carros/4
+
