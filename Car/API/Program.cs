@@ -1,9 +1,44 @@
 using API.Models;  
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDataContext>();
+
+// Swagger
+
+builder.Services.AddControllers();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "API Carro",
+        Description = "Api cara cadastro e listagem de carros",
+        Contact = new OpenApiContact
+        {
+            Name = "Pablo",
+            Email = "pablo.pasquim7@gmail.com",
+        },
+        License = new OpenApiLicense
+        {
+            Name = "Example License",
+            Url = new Uri("https://example.com/license")
+        }
+    });
+});
+
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 // Endpoints = relacionados ao recursos de Carros
 
@@ -54,7 +89,14 @@ app.MapPut("/api/carros/{id}",
     ([FromRoute] int Id, [FromBody] Carro carro, [FromServices] AppDataContext ctx) => {
 
     Carro? entidade = ctx.Carros.Find(Id);
+
+    if (entidade == null) {
+    return Results.NotFound();  
+    }
+    
     entidade.Modelo = ctx.Modelos.Find(Id);
+
+    
 
     if(entidade != null){
         entidade.Name = carro.Name;
@@ -83,12 +125,18 @@ app.MapDelete("/api/carros/{id}",
 
 // GET: Lista todos os modelos cadastrados
 app.MapGet("/api/modelos", 
-    ([FromServices] AppDataContext ctx) => {
+    ([FromQuery] string name, [FromServices] AppDataContext ctx) => {
 
-    var modelos = ctx.Modelos.ToList();
+    var query = ctx.Modelos.AsQueryable();
+
+    if(!string.IsNullOrWhiteSpace(name)){
+        query = query.Where(m => EF.Functions.Like(m.Name, "%" + name + "%"));
+    }
+      
+    var modelos = query.ToList();
 
     if(modelos == null || modelos.Count == 0)
-    {
+    {   
         return Results.NotFound();
     }
         return Results.Ok(modelos);
